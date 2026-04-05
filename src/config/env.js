@@ -3,8 +3,10 @@ const requiredEnvVars = [
     'JWT_SECRET',
     'MONGO_URI',
     'EMAIL_HOST',
-    'EMAIL_PASSWORD'
+    'EMAIL_PASSWORD',
+    'NODE_ENV'
 ];
+
 
 requiredEnvVars.forEach((key) => {
     if (!process.env[key]) {

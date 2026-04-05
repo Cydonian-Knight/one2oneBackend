@@ -4,6 +4,7 @@ const temporalToken = require('../utils/tokens');
 const User = require('../models/User');
 const emailService = require('../utils/mailer');
 
+
 // Bcrypt para encriptar contraseñas
 const bcrypt = require('bcryptjs');
 
@@ -104,8 +105,17 @@ exports.login = async (req, res, next) => {
         }
 
         // Login completado y cuenta verificada
-        const token = temporalToken.generateToken(loginUser.userId, 'access', '7d');
+        const token = temporalToken.generateToken(
+            loginUser.userId,
+            'access',
+            '7d');
 
+        res.cookie("token", token, {
+            httpOnly: process.env.NODE_ENV === "development",
+            secure: false,
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+        });
 
         return success(res, {
             message: "Login exitoso",
@@ -178,6 +188,12 @@ exports.verifyCode = async (req, res, next) => {
 
         const token = temporalToken.generateToken(verificationUser.userId, 'access', '7d');
 
+        res.cookie("token", token, {
+            httpOnly: process.env.NODE_ENV === "development",
+            secure: false,
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+        });
 
         return success(res, {
             message: "Login exitoso",
