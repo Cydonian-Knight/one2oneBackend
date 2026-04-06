@@ -3,11 +3,11 @@ const router = express.Router();
 
 const healthRoutes = require('./health.routes');
 const authRoutes = require('./auth.routes');
-const appRoutes = require('./app.routes')
+const conversationRoutes = require('./conversation.routes')
 
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
-router.use('/app', appRoutes)
+router.use('/conversation', conversationRoutes)
 
 module.exports = router;
 

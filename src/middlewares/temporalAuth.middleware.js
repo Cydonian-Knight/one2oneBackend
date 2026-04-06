@@ -4,9 +4,8 @@ const { error } = require('../utils/response');
 
 module.exports = async (req, res, next) => {
     // 1. Obtener el token del header 
-    const authHeader = req.header('Authorization');
+    const authHeader = req.header('authorization');
     const token = authHeader && authHeader.split(' ')[1];
-
     if (!token) {
         return error(res, 'Acceso denegado.', 401);
     }

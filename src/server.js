@@ -8,6 +8,6 @@ const app = require('./app');
 
 const { PORT, MONGO_URI, EMAIL_HOST, EMAIL_PASSWORD } = require('./config/env');
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}, with mongoURI ${MONGO_URI}, with email ${EMAIL_HOST} and ${EMAIL_PASSWORD}`);
 });

@@ -9,8 +9,12 @@ const app = express();
 app.use(cookieParser());
 
 app.use(cors({
-    origin: 'http://localhost:5173', // O el puerto que use tu Vite/React
-    credentials: true                // Permite el envío de cookies/headers de autenticación
+    origin: function (origin, callback) {
+        // Permite cualquier origen (IP, localhost, Tailscale, etc.)
+        // Si no hay origen (como Postman), también permite
+        callback(null, true);
+    },
+    credentials: true // <--- RECUERDA: Esto es lo que permite que funcione tu cookie
 }));
 app.use(express.json());
 
