@@ -12,7 +12,10 @@ function error(res, message = 'Error', status = 500) {
     });
 }
 
+
+
 module.exports = {
     success,
     error
+
 };

@@ -1,4 +1,6 @@
 // Lógica para envio de correos electrónicos
+const { success, error } = require('../utils/response');
+
 const nodemailer = require('nodemailer')
 
 // Carga de variables de entorno
@@ -17,8 +19,11 @@ const transporter = nodemailer.createTransport({
     }
 })
 
+
 // Funcion para el envio de codigo de verificación por correo
 exports.sendVerificationCode = async (email, verificationCode, next) => {
+    if (!email || !verificationCode) return error(res, 'Correo o Codigo invalidos', 401);
+
     try {
         const mailOptions = {
             from: EMAIL_HOST,

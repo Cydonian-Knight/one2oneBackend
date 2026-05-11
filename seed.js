@@ -31,22 +31,22 @@ const seedDB = async () => {
 
         const users = await User.insertMany([
             {
-                userId: "u_0001",
-                email: "zauro2n05@gmail.com",
+                _id: "u_0001",
+                email: "zauron205@gmail.com",
                 password: hashedPw,
                 username: "usuario1",
                 age: 25,
-                avatarUrl: "https://cdn.one2one/avatar1.png",
+                avatarUrl: null,
                 status: "active",
                 lastSeenAt: new Date()
             },
             {
-                userId: "u_0002",
-                email: "user2@email.com",
+                _id: "u_0002",
+                email: "zauron@email.com",
                 password: hashedPw,
                 username: "usuario2",
                 age: 27,
-                avatarUrl: "https://cdn.one2one/avatar2.png",
+                avatarUrl: null,
                 status: "active",
                 lastSeenAt: new Date()
             }
@@ -57,7 +57,19 @@ const seedDB = async () => {
         const conversation = await Conversation.create({
             conversationId: "c_0001",
             participants: ["u_0001", "u_0002"],
-            isActive: true
+            isActive: true,
+            // Agregamos el rastro del último mensaje
+            lastMessage: {
+                text: "Hola, ¿cómo estás?",
+                type: "text",
+                senderId: "u_0001",
+                createdAt: new Date()
+            },
+            // Simulamos que el usuario 2 tiene 1 mensaje sin leer (el de arriba)
+            unreadCounts: {
+                "u_0001": 0,
+                "u_0002": 1
+            }
         });
 
         // 4. MENSAJES
