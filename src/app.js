@@ -9,10 +9,7 @@ const server = http.createServer(app);
 const io = initSocket(server);
 
 app.use(cookieParser());
-app.use(cors({
-    origin: function (origin, callback) { callback(null, true); },
-    credentials: true
-}));
+app.use(cors({ origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], credentials: true }));
 app.use(express.json());
 app.use(trafficMiddleware); // ← antes de las rutas
 

@@ -76,61 +76,114 @@ exports.login = async (req, res, next) => {
     }
 
     try {
-        // Validación de admin desde .env
-        const isAdminEmail = email.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase();
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'None' : 'Lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+
+        // ─────────────────────────────────────────────
+        // ADMIN LOGIN
+        // ─────────────────────────────────────────────
+
+        const isAdminEmail =
+            email.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase();
+
         if (isAdminEmail) {
-            const isAdminPassword = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
-            if (!isAdminPassword) return error(res, 'Credenciales Inválidas', 401);
+            const isAdminPassword = await bcrypt.compare(
+                password,
+                process.env.ADMIN_PASSWORD_HASH
+            );
 
-            const token = temporalToken.generateToken(process.env.ADMIN_EMAIL, 'admin', '7d');
-            res.cookie("token", token, {
-                httpOnly: process.env.NODE_ENV === "development",
-                secure: false,
-                sameSite: "Lax",
-                maxAge: 7 * 24 * 60 * 60 * 1000
-            });
+            if (!isAdminPassword) {
+                return error(res, 'Credenciales Inválidas', 401);
+            }
 
-            return success(res, {
-                message: "Login de administrador exitoso",
-                token,
-                user: { username: "admin" }
-            }, 200);
+            const token = temporalToken.generateToken(
+                process.env.ADMIN_EMAIL,
+                'admin',
+                '7d'
+            );
+
+            res.cookie('token', token, cookieOptions);
+
+            return success(
+                res,
+                {
+                    message: 'Login de administrador exitoso',
+                    token,
+                    user: { username: 'admin' }
+                },
+                200
+            );
         }
 
-        // Flujo normal de usuario
-        const loginUser = await User.findByUserEmail(email.toLowerCase());
-        if (!loginUser) return error(res, 'Credenciales Inválidas', 401);
+        // ─────────────────────────────────────────────
+        // USER LOGIN
+        // ─────────────────────────────────────────────
 
-        const isMatch = await bcrypt.compare(password, loginUser.password);
-        if (!isMatch) return error(res, 'Credenciales Inválidas', 401);
+        const loginUser = await User.findByUserEmail(
+            email.toLowerCase()
+        );
+
+        if (!loginUser) {
+            return error(res, 'Credenciales Inválidas', 401);
+        }
+
+        const isMatch = await bcrypt.compare(
+            password,
+            loginUser.password
+        );
+
+        if (!isMatch) {
+            return error(res, 'Credenciales Inválidas', 401);
+        }
 
         if (!loginUser.isVerified) {
-            const token = temporalToken.generateToken(loginUser._id, 'verification', '15m');
-            return success(res, {
-                message: "Cuenta no verificada",
-                token,
-                needsVerification: true
-            }, 200);
+            const token = temporalToken.generateToken(
+                loginUser._id,
+                'verification',
+                '15m'
+            );
+
+            return success(
+                res,
+                {
+                    message: 'Cuenta no verificada',
+                    token,
+                    needsVerification: true
+                },
+                200
+            );
         }
 
-        const token = temporalToken.generateToken(loginUser._id, 'access', '7d');
-        res.cookie("token", token, {
-            httpOnly: process.env.NODE_ENV === "development",
-            secure: false,
-            sameSite: "Lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+        const token = temporalToken.generateToken(
+            loginUser._id,
+            'access',
+            '7d'
+        );
 
-        return success(res, {
-            message: "Login exitoso",
-            token,
-            user: { username: loginUser.username }
-        }, 200);
+        res.cookie('token', token, cookieOptions);
+
+        return success(
+            res,
+            {
+                message: 'Login exitoso',
+                token,
+                user: { username: loginUser.username }
+            },
+            200
+        );
 
     } catch (err) {
         next(err);
     }
 };
+
+
 
 exports.sendVerificationCode = async (req, res, next) => {
     try {
