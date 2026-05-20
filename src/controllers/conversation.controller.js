@@ -1,6 +1,6 @@
 const { success } = require('../utils/response');
 const Conversation = require('../models/Conversation');
-const Message = require('../models/message');
+const Message = require('../models/Message');
 const { getIO } = require('../sockets');
 
 exports.allConversations = async (req, res, next) => {
