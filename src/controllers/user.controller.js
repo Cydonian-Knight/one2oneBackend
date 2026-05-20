@@ -13,7 +13,13 @@ exports.header = async (req, res, next) => {
             username: user.username,
             avatarUrl: user.avatarUrl || null,
             lastSeenAt: user.lastSeenAt,
+            email: user.email,
+            age: user.age || null,
+            createdAt: new Date(user.createdAt).toLocaleDateString('es-MX'),
             id: user._id.toString(),
+            subscriptionExpiresAt: user.subscriptionExpiresAt || null,
+            strikes: user.strikes,
+            bannedDate: new Date(user.suspensionUntil)
         }, 201);
 
     } catch (err) {
@@ -28,11 +34,12 @@ exports.info = async (req, res, next) => {
         return success(res, {
             username: user.username,
             mood: user.mood,
-            avatarUrl: user.avatarUrl || null,
+            avatarUrl: user.avatarUrl,
             email: user.email,
             edad: user.age || null,
             memberSince: user.createdAt,
-            lastSeen: user.lastSeenAt
+            lastSeen: user.lastSeenAt,
+            subscriptionExpiresAt: user.subscriptionExpiresAt || null
         }, 201);
 
     } catch (err) {
@@ -63,12 +70,12 @@ exports.newAvatar = async (req, res, next) => {
 
 exports.newInfo = async (req, res, next) => {
     console.log(req);
-    const { mood, age, password } = req.body;
-    if (!age || !mood || !password) {
+    const { mood, edad } = req.body;
+    if (!edad || !mood) {
         return error(res, 'Todos los campos deben ser validos', 400);
     }
     try {
-        const user = await updateInfo(req.user.id, age, mood, password);
+        const user = await User.updateInfo(req.user.id, edad, mood);
         return success(res, {
             message: "Información Cambiada Correctamente"
         }, 200);
@@ -87,6 +94,19 @@ exports.searchUsers = async (req, res, next) => {
     try {
         const users = await User.searchUsers(query, myId);
         return success(res, { users });
+    } catch (err) {
+        next(err);
+    }
+};
+
+exports.newPass = async (req, res, next) => {
+    const oldPass = req.body.old;
+    const newPass = req.body.new;
+    const myId = req.user.id;
+
+    try {
+        await User.updatePassword(myId, oldPass, newPass);
+        return success(res, { message: 'Contraseña actualizada correctamente' });
     } catch (err) {
         next(err);
     }

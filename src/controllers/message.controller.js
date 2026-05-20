@@ -6,7 +6,7 @@ const { getIO } = require('../sockets');
 
 
 
-// Extrae los primeros 50 mensajes de la base de datos dada la conversación
+// Extrae los primeros 20 mensajes de la base de datos dada la conversación
 exports.initialMessages = async (req, res, next) => {
     try {
         const { conversationId } = req.params;
@@ -28,6 +28,7 @@ exports.initialMessages = async (req, res, next) => {
         next(err);
     }
 }
+
 exports.newMessage = async (req, res, next) => {
     try {
         const { conversationId } = req.params;
@@ -63,6 +64,26 @@ exports.newMessage = async (req, res, next) => {
 
         return success(res, { message }, 201);
 
+    } catch (err) {
+        next(err);
+    }
+};
+
+
+// Siguientes 20 mensajes
+exports.nextMessages = async (req, res, next) => {
+    try {
+        const { messageId } = req.params;
+        const userId = req.user.id;
+
+        const messages = await Message.nextMessages(messageId);
+        messages.reverse(); // más antiguos primero
+
+        messages.forEach(msg => {
+            msg.isOwn = msg.senderId === userId;
+        });
+
+        return success(res, { messages }, 200);
     } catch (err) {
         next(err);
     }

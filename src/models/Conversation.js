@@ -15,11 +15,14 @@ const conversationSchema = new mongoose.Schema({
         text: String,
         type: {
             type: String,
-            enum: ['text', 'image', 'file', 'voice', 'call'],
+            enum: ['text', 'image', 'video', 'audio', 'call'],
             default: 'text'
         },
         senderId: String,
-        createdAt: Date
+        status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' }, // ← agrega esto
+        createdAt: Date,
+        isDeleted: { type: Boolean, default: false },
+        isReported: { type: Boolean, default: false }
     },
     unreadCounts: {
         type: Map,
@@ -35,12 +38,17 @@ conversationSchema.index({ participants: 1 });
 
 // Trae todas las conversaciones de un usuario, ya procesadas
 conversationSchema.statics.findByUserId = async function (userId) {
-    const conversations = await this.find({ participants: userId })
-        .populate('participants', 'username avatarUrl status lastSeenAt'); // ← agrega lastSeenAt
+    const [conversations, currentUser] = await Promise.all([
+        this.find({ participants: userId })
+            .populate('participants', 'username avatarUrl status lastSeenAt age createdAt mood email blockedUsers'), // 👈
+        require('../models/User').findById(userId).select('blockedUsers')
+    ]);
 
     return conversations.map(conv => {
         const contact = conv.participants.find(p => p._id.toString() !== userId.toString());
         const unreadCount = conv.unreadCounts?.get(userId) || 0;
+        const isBlocked = currentUser.blockedUsers.includes(contact?._id.toString());
+        const blockedYou = contact?.blockedUsers?.includes(userId.toString()); // 👈
 
         return {
             id: conv.conversationId,
@@ -49,18 +57,23 @@ conversationSchema.statics.findByUserId = async function (userId) {
                 username: contact?.username,
                 avatarUrl: contact?.avatarUrl,
                 status: contact?.status,
-                lastSeenAt: contact?.lastSeenAt
+                lastSeenAt: contact?.lastSeenAt,
+                age: contact?.age,
+                createdAt: contact.createdAt.toLocaleDateString('es-MX'),
+                mood: contact?.mood,
+                email: contact?.email,
+                isBlocked,
+                blockedYou, // 👈
             },
             lastMessage: {
                 ...conv.lastMessage,
-                isOwn: conv.lastMessage?.senderId === userId.toString()
+                isOwn: conv.lastMessage?.senderId === userId.toString(),
             },
             unreadCount,
             updatedAt: conv.updatedAt
         };
     });
 };
-
 // Busca conversación existente o crea una nueva
 conversationSchema.statics.createOrFind = async function (userId, contactId) {
     const existing = await this.findOne({
@@ -103,9 +116,11 @@ conversationSchema.statics.unreadCountsUpdate = async function (conversationId, 
     });
 
     conversation.lastMessage = {
+        _id: lastMessage._id,
         text: lastMessage.content,
         type: lastMessage.type,
         senderId: lastMessage.senderId,
+        status: lastMessage.status,
         createdAt: lastMessage.createdAt
     };
 

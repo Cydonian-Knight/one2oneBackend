@@ -6,12 +6,14 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-const { initialMessages, newMessage } = require('../controllers/message.controller');
+const { initialMessages, newMessage, nextMessages } = require('../controllers/message.controller');
 const auth = require('../middlewares/auth.middleware');
 
 router.use(auth);
 router.get('/:conversationId/initial', initialMessages);
+router.get('/:messageId/nextOnes', nextMessages);
 router.post('/:conversationId/newMessage', upload.single('content'), newMessage);
+
 
 module.exports = router;
 

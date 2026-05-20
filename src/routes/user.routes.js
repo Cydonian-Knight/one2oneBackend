@@ -9,7 +9,7 @@ const upload = multer({ storage: storage });
 
 const router = express.Router();
 
-const { header, info, newAvatar, newInfo, searchUsers } = require('../controllers/user.controller');
+const { header, info, newAvatar, newInfo, searchUsers, newPass } = require('../controllers/user.controller');
 const auth = require('../middlewares/auth.middleware');
 
 // Uso de .use(auth) para que cualquier ruta a partir de aqui este protegida por el middleware
@@ -21,9 +21,10 @@ router.get('/info', info);
 router.post('/search', searchUsers);
 
 // Uso de .use(rateLimit.unaSolicitudLimit) para que cualquier ruta a partir de aqui solo pueda solicitarse una vez cada 1 hora
-router.use(rateLimit.unaSolicitudLimit)
-router.post('/newAvatar', upload.single('avatar'), newAvatar);
-router.post('/newInfo', newInfo);
+/* router.use(rateLimit.unaSolicitudLimit) */
+router.post('/newAvatar', rateLimit.unaSolicitudLimit, upload.single('avatar'), newAvatar);
+router.post('/newInfo', rateLimit.unaSolicitudLimit, newInfo);
+router.post('/newPass', rateLimit.unaSolicitudLimit, newPass)
 
 module.exports = router;
 

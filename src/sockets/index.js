@@ -28,7 +28,7 @@ const initSocket = (server) => {
 
     io.on('connection', (socket) => {
         console.log('Socket conectado:', socket.id);
-        socket.join(`user:${socket.user.id}`); // sala personal
+        socket.join(`user:${socket.user.id}`);
         userHandler(io, socket);
     });
 
@@ -40,4 +40,10 @@ const getIO = () => {
     return io;
 };
 
-module.exports = { initSocket, getIO };
+// ↓ Esto es lo único que agregas
+const getConnectedCount = () => {
+    const onlineUsers = require('./store'); // ajusta la ruta si es necesario
+    return onlineUsers.size;
+};
+
+module.exports = { initSocket, getIO, getConnectedCount };

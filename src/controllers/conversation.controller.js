@@ -32,6 +32,11 @@ exports.markAsRead = async (req, res, next) => {
         await Message.markAsRead(conversationId, userId);
         const conversation = await Conversation.resetCount(conversationId, userId);
 
+        await Conversation.updateOne(
+            { conversationId, 'lastMessage.senderId': { $ne: userId } },
+            { 'lastMessage.status': 'read' }
+        );
+
         const io = getIO();
         conversation.participants.forEach(participantId => {
             const id = participantId.toString();
@@ -56,6 +61,12 @@ exports.markAsDelivered = async (req, res, next) => {
 
         const result = await Message.markAsDelivered(conversationId, userId);
 
+        if (result.modifiedCount > 0) {
+            await Conversation.updateOne(
+                { conversationId, 'lastMessage.senderId': { $ne: userId } },
+                { 'lastMessage.status': 'delivered' }
+            );
+        }
         // Notificar al emisor
         const conversation = await Conversation.findOne({ conversationId });
         const io = getIO();

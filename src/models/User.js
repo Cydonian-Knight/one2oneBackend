@@ -20,7 +20,11 @@ const userSchema = new mongoose.Schema({
     lastSeenAt: { type: Date, default: Date.now },
     isVerified: { type: Boolean, default: false },
     verificationCode: { type: String, default: null },
-    verificationCodeExpires: { type: Date, default: null }
+    verificationCodeExpires: { type: Date, default: null },
+    subscriptionExpiresAt: {
+        type: Date,
+        default: null
+    }
 }, { timestamps: true, _id: false });
 
 userSchema.statics.findByUserId = async function (userId) {
@@ -93,20 +97,14 @@ userSchema.statics.updateImage = async function (userId, imageUrl) {
     return await user.avatarUrl;
 }
 
-userSchema.statics.updateInfo = async function (userId, age, mood, password) {
+userSchema.statics.updateInfo = async function (userId, age, mood) {
     const user = await this.findByUserId(userId);
     if (!user) throw new Error('Usuario no encontrado');
     if (user.mood !== mood) user.mood = mood;
     if ((!user.age || user.age !== age) && (age >= 18 && age < 100)) user.age = age;
 
-    const newPassword = await bcrypt.compare(password, user.password);
-    if (!newPassword && password.length >= 6) {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        user.password = hashedPassword;
-    }
     await user.save();
-    return await user.avatarUrl;
+    return await user;
 }
 
 userSchema.statics.searchUsers = async function (query, myId) {
@@ -193,6 +191,19 @@ userSchema.statics.updateLastSeenAt = async function (userId, lastSeenAt) {
 
     if (!user) throw new Error('Usuario no encontrado');
     return user;
+};
+
+
+// Actualiza la contraseña
+userSchema.statics.updatePassword = async function (userId, oldPassword, newPassword) {
+    const user = await this.findByUserId(userId);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) throw new Error('La contraseña actual es incorrecta');
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
 };
 
 module.exports = mongoose.model('User', userSchema);

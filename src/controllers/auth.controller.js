@@ -3,10 +3,19 @@ const { success, error } = require('../utils/response');
 const temporalToken = require('../utils/tokens');
 const User = require('../models/User');
 const emailService = require('../services/mailer');
+const { revokeToken } = require('../middlewares/auth.middleware');
+
 
 
 // Bcrypt para encriptar contraseñas
 const bcrypt = require('bcryptjs');
+
+exports.logout = (req, res) => {
+    const token = req.cookies.token;
+    if (token) revokeToken(token);
+    res.clearCookie('token');
+    return success(res);
+};
 
 // Controlador de autenticación, registro y verificacion de 2 pasos.
 exports.register = async (req, res, next) => {
@@ -67,14 +76,34 @@ exports.login = async (req, res, next) => {
     }
 
     try {
-        // Una sola consulta
+        // Validación de admin desde .env
+        const isAdminEmail = email.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase();
+        if (isAdminEmail) {
+            const isAdminPassword = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+            if (!isAdminPassword) return error(res, 'Credenciales Inválidas', 401);
+
+            const token = temporalToken.generateToken(process.env.ADMIN_EMAIL, 'admin', '7d');
+            res.cookie("token", token, {
+                httpOnly: process.env.NODE_ENV === "development",
+                secure: false,
+                sameSite: "Lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            });
+
+            return success(res, {
+                message: "Login de administrador exitoso",
+                token,
+                user: { username: "admin" }
+            }, 200);
+        }
+
+        // Flujo normal de usuario
         const loginUser = await User.findByUserEmail(email.toLowerCase());
         if (!loginUser) return error(res, 'Credenciales Inválidas', 401);
 
         const isMatch = await bcrypt.compare(password, loginUser.password);
         if (!isMatch) return error(res, 'Credenciales Inválidas', 401);
 
-        // Usa el campo directamente
         if (!loginUser.isVerified) {
             const token = temporalToken.generateToken(loginUser._id, 'verification', '15m');
             return success(res, {
@@ -85,7 +114,6 @@ exports.login = async (req, res, next) => {
         }
 
         const token = temporalToken.generateToken(loginUser._id, 'access', '7d');
-
         res.cookie("token", token, {
             httpOnly: process.env.NODE_ENV === "development",
             secure: false,
