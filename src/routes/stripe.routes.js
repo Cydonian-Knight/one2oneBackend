@@ -28,8 +28,8 @@ router.post('/create-checkout', async (req, res) => {
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             line_items: [{ price: PRICE_IDS[plan], quantity: 1 }],
-            success_url: `one2onefrontend.vercel.app/chat/settings/payment?checkout=success&plan=${plan}`,
-            cancel_url: `one2onefrontend.vercel.app/chat/settings/payment?checkout=cancelled`,
+            success_url: `https://one2onefrontend.vercel.app/chat/settings/payment?checkout=success&plan=${plan}`,
+            cancel_url: `https://one2onefrontend.vercel.app/chat/settings/payment?checkout=cancelled`,
             customer_email: req.user?.email,
             metadata: { userId: req.user?.id, plan },
         });
