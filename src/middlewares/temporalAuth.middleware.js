@@ -12,7 +12,7 @@ module.exports = async (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        if (decoded.purpose !== 'verification') {
+        if (decoded.type !== 'verification') {
             return error(res, 'Este token solo sirve para verificación', 403);
         }
 
