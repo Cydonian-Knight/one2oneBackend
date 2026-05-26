@@ -22,9 +22,9 @@ router.post('/search', searchUsers);
 
 // Uso de .use(rateLimit.unaSolicitudLimit) para que cualquier ruta a partir de aqui solo pueda solicitarse una vez cada 1 hora
 /* router.use(rateLimit.unaSolicitudLimit) */
-router.post('/newAvatar', rateLimit.unaSolicitudLimit, upload.single('avatar'), newAvatar);
-router.post('/newInfo', rateLimit.unaSolicitudLimit, newInfo);
-router.post('/newPass', rateLimit.unaSolicitudLimit, newPass)
+router.post('/newAvatar', upload.single('avatar'), newAvatar);
+router.post('/newInfo', newInfo);
+router.post('/newPass', newPass)
 
 module.exports = router;
 
