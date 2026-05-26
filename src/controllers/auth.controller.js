@@ -142,23 +142,24 @@ exports.login = async (req, res, next) => {
             return error(res, 'Credenciales Inválidas', 401);
         }
 
-        if (!loginUser.isVerified) {
-            const token = temporalToken.generateToken(
-                loginUser._id,
-                'verification',
-                '15m'
-            );
-
-            return success(
-                res,
-                {
-                    message: 'Cuenta no verificada',
-                    token,
-                    needsVerification: true
-                },
-                200
-            );
-        }
+            if (!loginUser.isVerified) {
+        // Revocar sesión anterior si existe
+        const oldToken = req.cookies.token;
+        if (oldToken) revokeToken(oldToken);
+        res.clearCookie('token');  // ← limpiar cookie anterior
+    
+        const token = temporalToken.generateToken(
+            loginUser._id,
+            'verification',
+            '15m'
+        );
+    
+        return success(res, {
+            message: 'Cuenta no verificada',
+            token,
+            needsVerification: true
+        }, 200);
+    }
 
         const token = temporalToken.generateToken(
             loginUser._id,
