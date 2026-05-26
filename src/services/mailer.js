@@ -1,12 +1,8 @@
 // Lógica para envio de correos electrónicos
-const { success, error } = require('../utils/response');
-
-const nodemailer = require('nodemailer')
-
+const nodemailer = require('nodemailer');
 // Carga de variables de entorno
 require('dotenv').config();
 require('../config/env');
-
 // Correo y contraseña
 const { EMAIL_HOST, EMAIL_PASSWORD } = require('../config/env');
 
@@ -17,12 +13,17 @@ const transporter = nodemailer.createTransport({
         user: EMAIL_HOST,
         pass: EMAIL_PASSWORD
     }
-})
+});
 
+// Verificación de conexión al arrancar el servidor
+transporter.verify((err, success) => {
+    if (err) console.error('❌ Error transportador:', err);
+    else console.log('✅ Transportador listo');
+});
 
 // Funcion para el envio de codigo de verificación por correo
-exports.sendVerificationCode = async (email, verificationCode, next) => {
-    if (!email || !verificationCode) return error(res, 'Correo o Codigo invalidos', 401);
+exports.sendVerificationCode = async (email, verificationCode) => {
+    if (!email || !verificationCode) throw new Error('Correo o código inválidos');
 
     try {
         const mailOptions = {
@@ -38,9 +39,10 @@ exports.sendVerificationCode = async (email, verificationCode, next) => {
                 </div>
             `
         };
+
         await transporter.sendMail(mailOptions);
         return true;
     } catch (err) {
-        next(err);
+        throw err;
     }
-}
+};
