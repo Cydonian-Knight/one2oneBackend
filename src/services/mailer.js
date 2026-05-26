@@ -1,48 +1,70 @@
-// Lógica para envio de correos electrónicos
-const nodemailer = require('nodemailer');
-// Carga de variables de entorno
+// Lógica para envío de correos electrónicos via Gmail API (fetch nativo)
 require('dotenv').config();
-require('../config/env');
-// Correo y contraseña
-const { EMAIL_HOST, EMAIL_PASSWORD } = require('../config/env');
+const { EMAIL_HOST, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } = require('../config/env');
 
-// Transportador de correo usando Gmail
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: EMAIL_HOST,
-        pass: EMAIL_PASSWORD
-    }
-});
+// Obtiene un access token usando el refresh token de OAuth2
+const getAccessToken = async () => {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id:     GMAIL_CLIENT_ID,
+            client_secret: GMAIL_CLIENT_SECRET,
+            refresh_token: GMAIL_REFRESH_TOKEN,
+            grant_type:    'refresh_token'
+        })
+    });
+    const data = await res.json();
+    if (!data.access_token) throw new Error(`No se obtuvo access token: ${JSON.stringify(data)}`);
+    return data.access_token;
+};
 
-// Verificación de conexión al arrancar el servidor
-transporter.verify((err, success) => {
-    if (err) console.error('❌ Error transportador:', err);
-    else console.log('✅ Transportador listo');
-});
+// Convierte el correo a formato base64url que exige Gmail API
+const buildRawEmail = (to, subject, html) => {
+    const message = [
+        `From: ${EMAIL_HOST}`,
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        html
+    ].join('\r\n');
 
-// Funcion para el envio de codigo de verificación por correo
+    return Buffer.from(message)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+};
+
+// Función para el envío de código de verificación por correo
 exports.sendVerificationCode = async (email, verificationCode) => {
     if (!email || !verificationCode) throw new Error('Correo o código inválidos');
 
-    try {
-        const mailOptions = {
-            from: EMAIL_HOST,
-            to: email,
-            subject: "Codigo de Verificación One2One",
-            html: `
-                <div style="font-family: sans-serif; text-align: center;">
-                    <h2>Verifica tu cuenta</h2>
-                    <p>Tu código de seguridad es:</p>
-                    <h1 style="color: #4A90E2; letter-spacing: 5px;">${verificationCode}</h1>
-                    <p>Este código expirará en 15 minutos.</p>
-                </div>
-            `
-        };
+    const html = `
+        <div style="font-family: sans-serif; text-align: center;">
+            <h2>Verifica tu cuenta</h2>
+            <p>Tu código de seguridad es:</p>
+            <h1 style="color: #4A90E2; letter-spacing: 5px;">${verificationCode}</h1>
+            <p>Este código expirará en 15 minutos.</p>
+        </div>
+    `;
 
-        await transporter.sendMail(mailOptions);
-        return true;
-    } catch (err) {
-        throw err;
-    }
+    const accessToken = await getAccessToken();
+    const raw = buildRawEmail(email, 'Codigo de Verificación One2One', html);
+
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw })
+    });
+
+    const result = await res.json();
+    if (result.error) throw new Error(`Gmail API error: ${result.error.message}`);
+
+    return true;
 };
