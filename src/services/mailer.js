@@ -4,6 +4,10 @@ const { EMAIL_HOST, GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } 
 
 // Obtiene un access token usando el refresh token de OAuth2
 const getAccessToken = async () => {
+    console.log('CLIENT_ID:', GMAIL_CLIENT_ID);
+    console.log('CLIENT_SECRET:', GMAIL_CLIENT_SECRET ? GMAIL_CLIENT_SECRET.slice(0, 10) + '...' : 'undefined');
+    console.log('REFRESH_TOKEN:', GMAIL_REFRESH_TOKEN ? GMAIL_REFRESH_TOKEN.slice(0, 10) + '...' : 'undefined');
+
     const res = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
