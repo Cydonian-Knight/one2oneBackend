@@ -13,10 +13,10 @@ router.get('/me', auth, (req, res) => {
 
 
 router.post('/register', /* rateLimit.tresSolicitudesLimit, */ register);
-router.post('/login', rateLimit.tresSolicitudesLimit, login);
+router.post('/login', login);
 router.post('/sendVerificationCode', /* rateLimit.tresSolicitudesLimit ,*/ temporalAuth, sendVerificationCode)
-router.post('/updateEmail', temporalAuth, rateLimit.tresSolicitudesLimit, updateEmail)
-router.post('/verifyCode', temporalAuth, rateLimit.tresSolicitudesLimit, verifyCode)
+router.post('/updateEmail', temporalAuth, updateEmail)
+router.post('/verifyCode', temporalAuth, verifyCode)
 router.post('/logout', auth, logout);
 
 
